@@ -19,8 +19,6 @@ windowHeight = 570
 # Windows Initialization and setup
 win = pygame.display.set_mode((windowWidth, windowHeight))  # Main window size
 pygame.display.set_caption("Rapid Snake")
-icon = pygame.image.load(r"C:\Users\Patricia Ann De Asis\Desktop\python\imgs\icon1.png")
-pygame.display.set_icon(icon)
 
 # Game speed
 clock = pygame.time.Clock()
@@ -35,11 +33,11 @@ blue = (0, 0, 255)
 snakeColor = (255, 255, 0)
 
 # Text Font
-black_font = pygame.font.Font(r"C:\Users\Patricia Ann De Asis\Desktop\python\fonts\Roboto-Black.ttf", 72)
-bold_font = pygame.font.Font(r"C:\Users\Patricia Ann De Asis\Desktop\python\fonts\Roboto-Bold.ttf", 48)
-light_font = pygame.font.Font(r"C:\Users\Patricia Ann De Asis\Desktop\python\fonts\Roboto-Light.ttf", 34)
-medium_font = pygame.font.Font(r"C:\Users\Patricia Ann De Asis\Desktop\python\fonts\Roboto-Medium.ttf", 21)
-regular_font = pygame.font.Font(r"C:\Users\Patricia Ann De Asis\Desktop\python\fonts\Roboto-Regular.ttf", 11)
+black_font = pygame.font.Font("fonts\Roboto-Black.ttf", 72)
+bold_font = pygame.font.Font("fonts\Roboto-Bold.ttf", 48)
+light_font = pygame.font.Font("fonts\Roboto-Light.ttf", 34)
+medium_font = pygame.font.Font("fonts\Roboto-Medium.ttf", 21)
+regular_font = pygame.font.Font("fonts\Roboto-Regular.ttf", 11)
 
 # Scoreboard Initialization
 scoreboard = pygame.Surface([windowWidth, 50])
