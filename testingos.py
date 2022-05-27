@@ -2,9 +2,12 @@
 # Rapid Snake
 
 # Libraries
+
+from os import path
 import sys
 import random
 import time
+from threading import Timer
 import tkinter as tk
 from tkinter import messagebox
 import pygame
@@ -19,10 +22,12 @@ windowHeight = 570
 # Windows Initialization and setup
 win = pygame.display.set_mode((windowWidth, windowHeight))  # Main window size
 pygame.display.set_caption("Rapid Snake")
+icon = pygame.image.load("imgs/icon1.png")
+pygame.display.set_icon(icon)
 
 # Game speed
 clock = pygame.time.Clock()
-FPS = 10
+FPS = 30
 
 # Colors
 white = (255, 255, 255)
@@ -33,11 +38,11 @@ blue = (0, 0, 255)
 snakeColor = (255, 255, 0)
 
 # Text Font
-black_font = pygame.font.Font("fonts\Roboto-Black.ttf", 72)
-bold_font = pygame.font.Font("fonts\Roboto-Bold.ttf", 48)
-light_font = pygame.font.Font("fonts\Roboto-Light.ttf", 34)
-medium_font = pygame.font.Font("fonts\Roboto-Medium.ttf", 21)
-regular_font = pygame.font.Font("fonts\Roboto-Regular.ttf", 11)
+black_font = pygame.font.Font("fonts/Roboto-Black.ttf", 72)
+bold_font = pygame.font.Font("fonts/Roboto-Bold.ttf", 48)
+light_font = pygame.font.Font("fonts/Roboto-Light.ttf", 34)
+medium_font = pygame.font.Font("fonts/Roboto-Medium.ttf", 21)
+regular_font = pygame.font.Font("fonts/Roboto-Regular.ttf", 11)
 
 # Scoreboard Initialization
 scoreboard = pygame.Surface([windowWidth, 50])
@@ -50,6 +55,15 @@ rows = 20
 # Snake Game Container
 container = pygame.Surface([screenSize, screenSize])
 container.fill((127, 127, 127))
+
+# Caller
+intro = True
+flag = None
+pause = None
+first_move = False
+count = 10
+score = 0
+high_score = "highscore.txt"
 
 
 class Cubes(object):
@@ -98,6 +112,7 @@ class Snake(object):
 
     # Snake Controls section
     def move(self):
+        global flag, pause, first_move
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -106,6 +121,15 @@ class Snake(object):
             keys = pygame.key.get_pressed()
             # Loop through dictionary of event keys
             for key in keys:
+                # if keys[pygame.K_p] or keys[pygame.K_ESCAPE]:
+                #     pause = True
+                #     if pause:
+                #         flag = False
+                #         print(event.typed + pause + flag)
+                #         Pause()
+                #     else:
+                #         pass
+
                 if keys[pygame.K_LEFT] or keys[pygame.K_a]:
                     if self.directX == 1:
                         pass
@@ -203,6 +227,9 @@ class Snake(object):
         self.body[-1].directX = directX
         self.body[-1].directY = directY
 
+    def popCube(self):
+        var = self.body.pop[-1]
+
     def draw(self, surface):
         for i, c in enumerate(self.body):
             if i == 0:
@@ -214,17 +241,47 @@ class Snake(object):
 class Button(object):
     global windowWidth, windowHeight
 
-    def __init__(self, X, Y):
-        width = windowWidth
-        height = windowHeight
-        self.size = pygame.Surface([100, 40])
-        self.text = pygame.font.Font
-        self.rect = self.size.get_rect()
-        self.rect.center = (X, Y)
+    def __init__(self, posBox, text_input, color, identifier):
+        # Passing variables
+        self.posBox = posBox
+        self.color = color
+        self.identify = identifier
+        # Button rectangle
+        self.size = pygame.Rect(self.posBox, (150, 40))
+        # Button text
+        self.text_input = text_input
+        self.text = light_font.render(self.text_input, True, self.color)
+        self.text_rect = self.text.get_rect(center=self.size.center)
 
-    def draw(self, color):
-        self.size.fill(color)
-        win.blit(self.size, (self.rect.x, self.rect.y))
+    def hoverButton(self, position):
+        if position[0] not in range(self.size.left, self.size.right) or position[1] not in range(
+                self.size.top, self.size.bottom):
+            self.text = light_font.render(self.text_input, True, black)
+        else:
+            self.text = light_font.render(self.text_input, True, self.color)
+
+    def checkInput(self, position, typed):
+        global intro, flag
+        if position[0] in range(self.size.left, self.size.right) and position[1] in range(self.size.top,
+                                                                                          self.size.bottom):
+            if not typed == 1:
+                pygame.quit()
+                sys.exit()
+            else:
+                intro = False
+                timer = time.time()
+                seconds = 1
+                while not intro:
+                    current_T = time.time()
+                    elapse_T = current_T - timer
+
+                    if elapse_T > seconds:
+                        flag = True
+                        break
+
+    def draw(self, btnColor):
+        pygame.draw.rect(win, btnColor, self.size, border_radius=10)
+        win.blit(self.text, self.text_rect)
 
 
 def draw_grid(current_width, row, surface):
@@ -251,14 +308,34 @@ def draw_grid(current_width, row, surface):
 
 
 def redraw_window(surface):
-    global rows, screenSize, snake, food
+    global rows, screenSize, snake, food, score
+
+    score_text, scoreLoc1 = text_object("Score:", medium_font, white)
+    main_score, scoreLoc2 = text_object(str(score[1]), medium_font, white)
+    snake_lenght, scoreLoc3 = text_object("Lenght:", medium_font, white)
+    main_lenght, scoreLoc4 = text_object(str(score[0]), medium_font, white)
+    scoreLoc1.topleft = (16, 0)
+    scoreLoc2.topleft = (77, 1)
+    scoreLoc3.topleft = (5, 25)
+    scoreLoc4.topleft = (77, 25)
+
+    timer_text, timerLoc1 = text_object("Countdown:", medium_font, white)
+    timer_data, timerLoc2 = text_object(str(count), medium_font, white)
+    timerLoc1.center = (windowWidth / 2, 15)
+    timerLoc2.center = (windowWidth / 2, 35)
     # what surface going to be filled
-    surface.fill(white)
+    surface.fill(snakeColor)
     # Casting the scoreboard and container into window
     win.blit(scoreboard, (0, 0))
     win.blit(container, (10, 60))
     snake.draw(surface)
     food.draw(surface)
+    win.blit(score_text, scoreLoc1)
+    win.blit(main_score, scoreLoc2)
+    win.blit(snake_lenght, scoreLoc3)
+    win.blit(main_lenght, scoreLoc4)
+    win.blit(timer_text, timerLoc1)
+    win.blit(timer_data, timerLoc2)
     # Displaying the grid into window with screen size desire, rows, and where to put(surface)
     draw_grid(screenSize, rows, surface)
     # Update the screen to load the applied objects
@@ -309,52 +386,79 @@ def message_box(subject, content):
         pass
 
 
-def main_intro():
-    global black_font, bold_font, medium_font, regular_font, light_font
+def Pause():
+    global pause, flag
+    print("Paused is clicked")
+    flag = True
 
-    intro = True
+    timer = time.time()
+    seconds = 5
+    while pause:
+        current_T = time.time()
+        elapse_T = current_T - timer
+
+        if elapse_T > seconds:
+            flag = True
+            print(str(int(elapse_T)), +flag)
+            pause = False
+            break
+        clock.tick(30)
+    main()
+
+
+def main_intro():
+    global black_font, bold_font, medium_font, regular_font, light_font, windowWidth, windowHeight, intro
+    play_game = Button((windowWidth / 2 - 170, 400), "PLAY", snakeColor, "Play button clicked")
+    exit_game = Button((windowWidth / 2 + 21, 400), "QUIT", snakeColor, "Quit button clicked")
+    message1, messageLoc1 = text_object("Rapid", black_font, red)
+    messageLoc1.center = ((windowWidth / 2 - 90), 200)
+    message2, messageLoc2 = text_object("Snake", black_font, green)
+    messageLoc2.center = ((windowWidth / 2 + 100), 200)
+    detail1, detailLoc1 = text_object("This is a enhance version of snake game that has been"
+                                      "already enhance by us", regular_font, black)
+    detailLoc1.center = ((windowWidth / 2), (windowHeight / 2 + 50))
+
     while intro:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                play_game.checkInput(pygame.mouse.get_pos(), 1)
+                exit_game.checkInput(pygame.mouse.get_pos(), 0)
+
         win.fill(white)
-        message1, messageLoc1 = text_object("Rapid", black_font, red)
-        messageLoc1.center = ((windowWidth / 2 - 100), 200)
-        message2, messageLoc2 = text_object("Snake", black_font, green)
-        messageLoc2.center = ((windowWidth / 2 + 100), 200)
-        detail1, detailLoc1 = text_object("This is a enhance version of snake game that has been"
-                                          "already enhance by us", regular_font, black)
-        detailLoc1.center = ((windowWidth / 2), (windowHeight / 2 + 50))
-        play_game = Button((windowWidth / 2 - 100), 400)
-        exit_game = Button((windowWidth / 2 + 100), 400)
         win.blit(message1, messageLoc1)
         win.blit(message2, messageLoc2)
         play_game.draw(red)
+        play_game.hoverButton(pygame.mouse.get_pos())
         exit_game.draw(green)
+        exit_game.hoverButton(pygame.mouse.get_pos())
         win.blit(detail1, detailLoc1)
         pygame.display.update()
-        clock.tick(8)
+        clock.tick(30)
 
 
 def main():
-    global rows, snake, food, win, flag
+    global rows, snake, food, win, flag, intro, score, count
 
+    score = [0, 0]
     # Passing the Snake(object) to snake variable
     snake = Snake(snakeColor, (10, 10))
     # Passing the Cubes(object) to snack variable
     food = Cubes(random_snack(rows, snake), color=blue)
 
-    flag = False
     # Main loop to load the animations and logic
-    while flag:
+    while flag and not intro:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            if event.type == pygame.K_F9:
+                snake.popCube()
         # pygame.time.delay is a limiter to maintain the performance of computer
-        pygame.time.delay(50)
+        pygame.time.delay(120)
         clock.tick(FPS)
         snake.move()
         # Checking if the head of the snake is in the food current location
@@ -363,22 +467,31 @@ def main():
             snake.addCube()
             # Spawn another food
             food = Cubes(random_snack(rows, snake), color=blue)
+            check = len(snake.body)
+            add = 0
+            if check % 2 == 0:
+                add += check + 2 + score[1]
+                score = [len(snake.body), add]
+                add = 0
+            else:
+                add += check + score[1]
+                score = [len(snake.body), add]
+                add = 0
 
         # Check the current length of the snake for score counting
         for x in range(len(snake.body)):
             # Collision checker if the head hit itself
             if snake.body[x].pos in list(map(lambda z: z.pos, snake.body[x + 1:])):
                 # Show score into the console
-                print('Score: ', len(snake.body))
+                print('Score: ', len(snake.body), score[0], score[1])
                 # Call message box function
-                message_box("You lose!", "Try again")
+                message_box("You lose!", "Score: " + str(score[1]) + " Lenght: " + str(score[0]))
                 # Call reset function
                 snake.reset((10, 10))
+                score = [0, 0]
                 break
         # Calling the redraw_window to update the game
         redraw_window(win)
-        # Update the screen and fill the window
-        pygame.display.flip()
         # Second update for assurance purpose
         pygame.display.update()
 
