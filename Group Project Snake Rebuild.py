@@ -18,15 +18,11 @@ starting = [int(x) for x in ranNum]
 width = 500
 rows = 20
 win = pygame.display.set_mode((width, width))
-icon = pygame.image.load("C:\\Users\\Patricia Ann De Asis\\Desktop\\python\\imgs\\bgpic1.png")
+icon = pygame.image.load("imgs\bgpic1.png")
 
 # Time and FPS Section
 clock = pygame.time.Clock()
 FPS = 10
-
-# Snake Move
-smove = pygame.mixer.Sound('C:\\Users\\Patricia Ann De Asis\\Desktop\\python\\sounds\\snakemove.wav')
-seat = pygame.mixer.Sound('C:\\Users\\Patricia Ann De Asis\\Desktop\\python\\sounds\\snakeat.wav')
 
 # Color Section
 black = (0, 0, 0)
@@ -44,9 +40,9 @@ green = (0, 255, 0)
 clickedGreen = (0, 127, 0)
 
 # Game Fonts
-largeFont = pygame.font.Font('C:\\Users\\Patricia Ann De Asis\\Desktop\\python\\fonts\\Courier Prime Bold.ttf', 52)
-mediumFont = pygame.font.Font('C:\\Users\\Patricia Ann De Asis\\Desktop\\python\\fonts\\Courier Prime.ttf', 15)
-smallFont = pygame.font.Font('C:\\Users\\Patricia Ann De Asis\\Desktop\\python\\fonts\\Courier Prime.ttf', 11)
+largeFont = pygame.font.Font('fonts\\Courier Prime Bold.ttf', 52)
+mediumFont = pygame.font.Font('fonts\\Courier Prime.ttf', 15)
+smallFont = pygame.font.Font('fonts\\Courier Prime.ttf', 11)
 
 # Pause variable
 pause = False
