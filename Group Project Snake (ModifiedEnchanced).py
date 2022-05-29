@@ -506,7 +506,7 @@ def main():
                 snake.reset((10, 10))
                 break
 
-        if len(snake.body) > 1:
+        if len(snake.body) > 1 and time_limit != 0:
             updated_timer = int(elapse_t) - int(time_limit)
         else:
             time_limit = 10
