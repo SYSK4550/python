@@ -24,7 +24,7 @@ pygame.display.set_icon(icon)
 
 # Game speed
 clock = pygame.time.Clock()
-FPS = 30
+FPS = 10
 
 # Colors
 white = (255, 255, 255)
@@ -61,8 +61,6 @@ first_move = False
 last_move = ["", int(0)]
 score = 0
 high_score = "highscore.txt"
-elapse_t = None
-updated_timer = int(0)
 
 
 class Cubes(object):
@@ -71,7 +69,7 @@ class Cubes(object):
 
     def __init__(self, start, directX=1, directY=0, color=snakeColor):
         self.pos = start
-        self.directX = 1
+        self.directX = 0
         self.directY = 0
         self.color = color
 
@@ -108,7 +106,7 @@ class Snake(object):
         self.head = Cubes(pos)
         self.body.append(self.head)
         self.directX = 0
-        self.directY = 1
+        self.directY = 0
 
     # Snake Controls section
     def move(self):
@@ -188,12 +186,15 @@ class Snake(object):
                     c.move(c.directX, c.directY)
 
     def reset(self, pos):
-        self.head == Cubes(pos)
+        global last_move, start_time, elapse_time
+        self.head = Cubes(pos)
         self.body = []
         self.body.append(self.head)
         self.turns = {}
-        self.directX = 1
+        self.directX = 0
         self.directY = 0
+        last_move = ["", 0]
+        start_time = time.time()
 
     def addCube(self):
         # Counting the current length of the snake reverse
@@ -299,8 +300,8 @@ def draw_grid(current_width, row, surface):
         pygame.draw.line(surface, black, (10, y), (current_width + 10, y), 1)
 
 
-def redraw_window(surface):
-    global rows, screenSize, snake, food, score, last_move, updated_timer
+def redraw_window(surface, new_time):
+    global rows, screenSize, snake, food, score, last_move
 
     score_text, scoreLoc1 = text_object("Score: " + str(score[1]), medium_font, white)
     snake_lenght, scoreLoc3 = text_object("Lenght: " + str(score[0]), medium_font, white)
@@ -308,7 +309,7 @@ def redraw_window(surface):
     scoreLoc3.topleft = (5, 25)
 
     # Timer text/location
-    timer_text, timerLoc1 = text_object("Countdown:" + str(Timer(updated_timer, last_move[1])), medium_font, white)
+    timer_text, timerLoc1 = text_object("Countdown: " + str(new_time), medium_font, white)
     timerLoc1.topleft = (windowWidth / 3, 0)
 
     # Player Moves
@@ -376,10 +377,11 @@ def message_box(subject, content):
 
 
 def Pause():
-    global pause, flag
+    global pause, flag, start_time, elapse_time
     print("Paused is clicked")
 
     while pause:
+        start_time = time.time() - elapse_time
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -394,18 +396,6 @@ def Pause():
                 else:
                     print("Invalid Input")
         clock.tick(30)
-
-
-def Timer(counter, checker):
-    global snake, elapse_t
-    counter = updated_timer
-    checker = last_move[1]
-
-    while not checker == 0:
-        elapse_t = time.time()
-        if elapse_t <= counter and len(snake.body) > 2:
-            counter = int(elapse_t) - int(counter)
-        return counter
 
 
 def main_intro():
@@ -446,9 +436,10 @@ def main_intro():
 
 
 def main():
-    global rows, snake, food, win, flag, intro, score, time_limit, updated_timer, elapse_t
+    global rows, snake, food, win, flag, intro, score, time_limit, elapse_time, start_time
 
-    time_limit = int(0)
+    time_limit = 8
+    start_time = time.time()
     score = [0, 0]
     # Passing the Snake(object) to snake variable
     snake = Snake(snakeColor, (10, 10))
@@ -457,26 +448,25 @@ def main():
 
     # Main loop to load the animations and logic
     while flag and not intro:
+        updated_timer = 8
+        elapse_time = time.time() - start_time
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
         # pygame.time.delay is a limiter to maintain the performance of computer
-        pygame.time.delay(117)
         clock.tick(FPS)
         snake.move()
 
         # Checking if the head of the snake is in the food current location
         if snake.body[0].pos == food.pos:
-            start_time = time.time()
-            elapse_t = time.time() - start_time
             # Add another cube into the body
             snake.addCube()
             # Spawn another food
             food = Cubes(random_snack(rows, snake), color=blue)
             add = 0
-            time_limit = int(10)
+            start_time = time.time()
 
             if len(snake.body) % 2 == 0:
                 add += len(snake.body) + 2 + score[1]
@@ -486,12 +476,6 @@ def main():
                 add += len(snake.body) + score[1]
                 score = [len(snake.body), add]
                 add = 0
-
-        # if score[1] % 100 == 0:
-        #     score[1] -= 100
-        #     update_score += 100
-        # else:
-        #     pass
 
         # Check the current length of the snake for score counting
         for x in range(len(snake.body)):
@@ -506,13 +490,20 @@ def main():
                 snake.reset((10, 10))
                 break
 
-        if len(snake.body) > 1 and time_limit != 0:
-            updated_timer = int(elapse_t) - int(time_limit)
-        else:
-            time_limit = 10
+            if last_move[1] == 1 and len(snake.body) > 1 and not updated_timer == 0:
+                updated_timer = time_limit - int(elapse_time)
+                if elapse_time > time_limit:
+                    # Show score into the console
+                    print('Score: ', score[0], score[1])
+                    # Call message box function
+                    message_box("You lose!", "Score: " + str(score[1]) + " Lenght: " + str(score[0]))
+                    # Call reset function
+                    score = [0, 0]
+                    snake.reset((10, 10))
+                    break
 
         # Calling the redraw_window to update the game
-        redraw_window(win)
+        redraw_window(win, updated_timer)
         # Second update for assurance purpose
         pygame.display.update()
 
