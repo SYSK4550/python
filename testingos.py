@@ -7,7 +7,6 @@ from os import path
 import sys
 import random
 import time
-from threading import Timer
 import tkinter as tk
 from tkinter import messagebox
 import pygame
@@ -56,14 +55,16 @@ rows = 20
 container = pygame.Surface([screenSize, screenSize])
 container.fill((127, 127, 127))
 
-# Caller
+# Global Variable Caller
 intro = True
 flag = None
 pause = None
 first_move = False
-count = 10
+last_move = ["", int(0)]
 score = 0
 high_score = "highscore.txt"
+elapse_t = None
+updated_timer = int(0)
 
 
 class Cubes(object):
@@ -104,6 +105,7 @@ class Snake(object):
     turns = {}
 
     def __init__(self, color, pos):
+        self.press = False
         self.color = color
         self.head = Cubes(pos)
         self.body.append(self.head)
@@ -112,59 +114,48 @@ class Snake(object):
 
     # Snake Controls section
     def move(self):
-        global flag, pause, first_move
+        global flag, pause, first_move, last_move
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-
-            keys = pygame.key.get_pressed()
             # Loop through dictionary of event keys
-            for key in keys:
-                # if keys[pygame.K_p] or keys[pygame.K_ESCAPE]:
-                #     pause = True
-                #     if pause:
-                #         flag = False
-                #         print(event.typed + pause + flag)
-                #         Pause()
-                #     else:
-                #         pass
-
-                if keys[pygame.K_LEFT] or keys[pygame.K_a]:
-                    if self.directX == 1:
-                        pass
+            if event.type == pygame.KEYDOWN:
+                keys = pygame.key.get_pressed()
+                if keys[pygame.K_p] or keys[pygame.K_ESCAPE] and not pause and not len(self.body) == 0:
+                    pause = True
+                    if pause:
+                        last_move = ["PAUSE", 0]
+                        Pause()
                     else:
-                        self.directX = -1
-                        self.directY = 0
-                        # This a dictionary of current head position and also where the cubes going to turn
-                        self.turns[self.head.pos[:]] = [self.directX, self.directY]
-
-                elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
-                    if self.directX == -1:
                         pass
-                    else:
-                        self.directX = 1
-                        self.directY = 0
-                        # This a dictionary of current head position and also where the cubes going to turn
-                        self.turns[self.head.pos[:]] = [self.directX, self.directY]
 
-                elif keys[pygame.K_UP] or keys[pygame.K_w]:
-                    if self.directY == 1:
-                        pass
-                    else:
-                        self.directX = 0
-                        self.directY = -1
-                        # This a dictionary of current head position and also where the cubes going to turn
-                        self.turns[self.head.pos[:]] = [self.directX, self.directY]
+                if keys[pygame.K_LEFT] or keys[pygame.K_a] and not self.directX == 1:
+                    self.directX = -1
+                    self.directY = 0
+                    self.turns[self.head.pos[:]] = [self.directX, self.directY]
+                    last_move = ["LEFT", 1]
 
-                elif keys[pygame.K_DOWN] or keys[pygame.K_s]:
-                    if self.directY == -1:
-                        pass
-                    else:
-                        self.directX = 0
-                        self.directY = 1
-                        # This a dictionary of current head position and also where the cubes going to turn
-                        self.turns[self.head.pos[:]] = [self.directX, self.directY]
+                if keys[pygame.K_RIGHT] or keys[pygame.K_d] and not self.directX == -1:
+                    self.directX = 1
+                    self.directY = 0
+                    # This a dictionary of current head position and also where the cubes going to turn
+                    self.turns[self.head.pos[:]] = [self.directX, self.directY]
+                    last_move = ["RIGHT", 1]
+
+                if keys[pygame.K_UP] or keys[pygame.K_w] and not self.directY == 1:
+                    self.directX = 0
+                    self.directY = -1
+                    # This a dictionary of current head position and also where the cubes going to turn
+                    self.turns[self.head.pos[:]] = [self.directX, self.directY]
+                    last_move = ["UP", 1]
+
+                if keys[pygame.K_DOWN] or keys[pygame.K_s] and not self.directY == -1:
+                    self.directX = 0
+                    self.directY = 1
+                    # This a dictionary of current head position and also where the cubes going to turn
+                    self.turns[self.head.pos[:]] = [self.directX, self.directY]
+                    last_move = ["DOWN", 1]
 
         # Actually moving the cubes according to input
         for i, c in enumerate(self.body):
@@ -199,13 +190,12 @@ class Snake(object):
                     c.move(c.directX, c.directY)
 
     def reset(self, pos):
-        var = self.head == Cubes(pos)
+        self.head == Cubes(pos)
         self.body = []
         self.body.append(self.head)
         self.turns = {}
-        self.directX = 0
-        self.directY = 1
-        pass
+        self.directX = 1
+        self.directY = 0
 
     def addCube(self):
         # Counting the current length of the snake reverse
@@ -227,8 +217,12 @@ class Snake(object):
         self.body[-1].directX = directX
         self.body[-1].directY = directY
 
-    def popCube(self):
-        var = self.body.pop[-1]
+    def popCube(self, counter):
+        hit = self.body
+        if counter:
+            hit.pop()
+
+        pass
 
     def draw(self, surface):
         for i, c in enumerate(self.body):
@@ -308,21 +302,20 @@ def draw_grid(current_width, row, surface):
 
 
 def redraw_window(surface):
-    global rows, screenSize, snake, food, score
+    global rows, screenSize, snake, food, score, last_move, updated_timer
 
-    score_text, scoreLoc1 = text_object("Score:", medium_font, white)
-    main_score, scoreLoc2 = text_object(str(score[1]), medium_font, white)
-    snake_lenght, scoreLoc3 = text_object("Lenght:", medium_font, white)
-    main_lenght, scoreLoc4 = text_object(str(score[0]), medium_font, white)
+    score_text, scoreLoc1 = text_object("Score: " + str(score[1]), medium_font, white)
+    snake_lenght, scoreLoc3 = text_object("Lenght: " + str(score[0]), medium_font, white)
     scoreLoc1.topleft = (16, 0)
-    scoreLoc2.topleft = (77, 1)
     scoreLoc3.topleft = (5, 25)
-    scoreLoc4.topleft = (77, 25)
 
-    timer_text, timerLoc1 = text_object("Countdown:", medium_font, white)
-    timer_data, timerLoc2 = text_object(str(count), medium_font, white)
-    timerLoc1.center = (windowWidth / 2, 15)
-    timerLoc2.center = (windowWidth / 2, 35)
+    # Timer text/location
+    timer_text, timerLoc1 = text_object("Countdown:" + str(Timer(updated_timer, last_move[1])), medium_font, white)
+    timerLoc1.topleft = (windowWidth / 3, 0)
+
+    # Player Moves
+    moves_text, moveLoc = text_object("Last move: " + str(last_move[0]) + " " + str(last_move[1]), regular_font, white)
+    moveLoc.midtop = (windowWidth - 50, 35)
     # what surface going to be filled
     surface.fill(snakeColor)
     # Casting the scoreboard and container into window
@@ -331,11 +324,9 @@ def redraw_window(surface):
     snake.draw(surface)
     food.draw(surface)
     win.blit(score_text, scoreLoc1)
-    win.blit(main_score, scoreLoc2)
     win.blit(snake_lenght, scoreLoc3)
-    win.blit(main_lenght, scoreLoc4)
     win.blit(timer_text, timerLoc1)
-    win.blit(timer_data, timerLoc2)
+    win.blit(moves_text, moveLoc)
     # Displaying the grid into window with screen size desire, rows, and where to put(surface)
     draw_grid(screenSize, rows, surface)
     # Update the screen to load the applied objects
@@ -389,31 +380,47 @@ def message_box(subject, content):
 def Pause():
     global pause, flag
     print("Paused is clicked")
-    flag = True
 
-    timer = time.time()
-    seconds = 5
     while pause:
-        current_T = time.time()
-        elapse_T = current_T - timer
-
-        if elapse_T > seconds:
-            flag = True
-            print(str(int(elapse_T)), +flag)
-            pause = False
-            break
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                keys = pygame.key.get_pressed()
+                if keys[pygame.K_p] or keys[pygame.K_ESCAPE]:
+                    print("Unpause", + pause)
+                    pause = False
+                    time.sleep(0)
+                    pass
+                else:
+                    print("Invalid Input")
         clock.tick(30)
-    main()
+
+
+def Timer(counter, checker):
+    global snake, elapse_t
+    counter = updated_timer
+    checker = last_move[1]
+
+    while not checker == 0:
+        elapse_t = time.time()
+        if elapse_t <= counter and len(snake.body) > 2:
+            counter = int(elapse_t) - int(counter)
+        return counter
 
 
 def main_intro():
     global black_font, bold_font, medium_font, regular_font, light_font, windowWidth, windowHeight, intro
     play_game = Button((windowWidth / 2 - 170, 400), "PLAY", snakeColor, "Play button clicked")
     exit_game = Button((windowWidth / 2 + 21, 400), "QUIT", snakeColor, "Quit button clicked")
+
     message1, messageLoc1 = text_object("Rapid", black_font, red)
-    messageLoc1.center = ((windowWidth / 2 - 90), 200)
+    messageLoc1.topright = ((windowWidth / 2), 200)
+
     message2, messageLoc2 = text_object("Snake", black_font, green)
-    messageLoc2.center = ((windowWidth / 2 + 100), 200)
+    messageLoc2.topleft = ((windowWidth / 2), 200)
+
     detail1, detailLoc1 = text_object("This is a enhance version of snake game that has been"
                                       "already enhance by us", regular_font, black)
     detailLoc1.center = ((windowWidth / 2), (windowHeight / 2 + 50))
@@ -441,8 +448,9 @@ def main_intro():
 
 
 def main():
-    global rows, snake, food, win, flag, intro, score, count
+    global rows, snake, food, win, flag, intro, score, time_limit, updated_timer, elapse_t
 
+    time_limit = int(0)
     score = [0, 0]
     # Passing the Snake(object) to snake variable
     snake = Snake(snakeColor, (10, 10))
@@ -455,41 +463,56 @@ def main():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            if event.type == pygame.K_F9:
-                snake.popCube()
+
         # pygame.time.delay is a limiter to maintain the performance of computer
-        pygame.time.delay(120)
+        pygame.time.delay(117)
         clock.tick(FPS)
         snake.move()
+
         # Checking if the head of the snake is in the food current location
         if snake.body[0].pos == food.pos:
+            start_time = time.time()
+            elapse_t = time.time() - start_time
             # Add another cube into the body
             snake.addCube()
             # Spawn another food
             food = Cubes(random_snack(rows, snake), color=blue)
-            check = len(snake.body)
             add = 0
-            if check % 2 == 0:
-                add += check + 2 + score[1]
+            time_limit = int(10)
+
+            if len(snake.body) % 2 == 0:
+                add += len(snake.body) + 2 + score[1]
                 score = [len(snake.body), add]
                 add = 0
             else:
-                add += check + score[1]
+                add += len(snake.body) + score[1]
                 score = [len(snake.body), add]
                 add = 0
+
+        # if score[1] % 100 == 0:
+        #     score[1] -= 100
+        #     update_score += 100
+        # else:
+        #     pass
 
         # Check the current length of the snake for score counting
         for x in range(len(snake.body)):
             # Collision checker if the head hit itself
             if snake.body[x].pos in list(map(lambda z: z.pos, snake.body[x + 1:])):
                 # Show score into the console
-                print('Score: ', len(snake.body), score[0], score[1])
+                print('Score: ', score[0], score[1])
                 # Call message box function
                 message_box("You lose!", "Score: " + str(score[1]) + " Lenght: " + str(score[0]))
                 # Call reset function
-                snake.reset((10, 10))
                 score = [0, 0]
+                snake.reset((10, 10))
                 break
+
+        if len(snake.body) > 1:
+            updated_timer = int(elapse_t) - int(time_limit)
+        else:
+            time_limit = 10
+
         # Calling the redraw_window to update the game
         redraw_window(win)
         # Second update for assurance purpose
