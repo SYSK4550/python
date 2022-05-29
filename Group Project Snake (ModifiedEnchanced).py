@@ -216,13 +216,6 @@ class Snake(object):
         self.body[-1].directX = directX
         self.body[-1].directY = directY
 
-    def popCube(self, counter):
-        hit = self.body
-        if counter:
-            hit.pop()
-
-        pass
-
     def draw(self, surface):
         for i, c in enumerate(self.body):
             if i == 0:
@@ -441,6 +434,8 @@ def main():
     time_limit = 8
     start_time = time.time()
     score = [0, 0]
+    comparing = float(0.0)
+    add = 0
     # Passing the Snake(object) to snake variable
     snake = Snake(snakeColor, (10, 10))
     # Passing the Cubes(object) to snack variable
@@ -477,6 +472,13 @@ def main():
                 score = [len(snake.body), add]
                 add = 0
 
+            if len(snake.body) % 15 == comparing:
+                comparing = float(0.1)
+                if comparing == float(0.1):
+                    time_limit = time_limit - 1
+                    print("yes")
+            comparing = float(0.0)
+
         # Check the current length of the snake for score counting
         for x in range(len(snake.body)):
             # Collision checker if the head hit itself
@@ -490,9 +492,16 @@ def main():
                 snake.reset((10, 10))
                 break
 
-            if last_move[1] == 1 and len(snake.body) > 1 and not updated_timer == 0:
+        for x in range(len(snake.body)):
+            if last_move[1] == 1 and len(snake.body) >= 1 and not updated_timer == 0:
                 updated_timer = time_limit - int(elapse_time)
                 if elapse_time > time_limit:
+                    snake.body.pop()
+                    score[0] = len(snake.body)
+                    start_time = time.time()
+
+                # print(len(snake.body))
+                if elapse_time > time_limit and len(snake.body) == 0:
                     # Show score into the console
                     print('Score: ', score[0], score[1])
                     # Call message box function
