@@ -2,8 +2,6 @@
 # Rapid Snake
 
 # Libraries
-
-from os import path
 import sys
 import random
 import time
@@ -122,7 +120,7 @@ class Snake(object):
             # Loop through dictionary of event keys
             if event.type == pygame.KEYDOWN:
                 keys = pygame.key.get_pressed()
-                if keys[pygame.K_p] or keys[pygame.K_ESCAPE] and not pause and not len(self.body) == 0:
+                if keys[pygame.K_p] or keys[pygame.K_ESCAPE] and not pause and len(self.body) != 1:
                     pause = True
                     if pause:
                         last_move = ["PAUSE", 0]
