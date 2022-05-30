@@ -1,14 +1,14 @@
 # Not mine, Edited and modified for study purposes
 # Rapid Snake
 
-# Libraries
-import pygame
-import sys
-import pickle
 import random
+import sys
 import time
 import tkinter as tk
 from tkinter import messagebox
+
+# Libraries
+import pygame
 
 # Game Initializing
 pygame.init()
@@ -36,7 +36,7 @@ black = (0, 0, 0)
 # reserve color (44, 62, 80)
 intro_background = (52, 152, 219)
 main_background = (246, 229, 141)
-pause_backgrourd = (26, 188, 156)
+pause_background = (26, 188, 156)
 
 # Buttons
 play_color = (241, 196, 15)
@@ -54,10 +54,6 @@ snakeColor = (246, 229, 141)
 gridC = (48, 51, 107)
 foodC = (186, 220, 88)
 
-red = (255, 0, 0)
-green = (0, 255, 0)
-blue = (0, 0, 255)
-
 # Text Font
 # Intro Screen
 title_font = pygame.font.Font("fonts/BungeeShade-Regular.ttf", 72)
@@ -71,14 +67,8 @@ counter_font = pygame.font.Font("fonts/Monoton-Regular.ttf", 40)
 timerT_font = pygame.font.Font("fonts/PressStart2P-Regular.ttf", 10)
 highscore_lastM_font = pygame.font.Font("fonts/Oswald-VariableFont_wght.ttf", 12)
 
-black_font = pygame.font.Font("fonts/Roboto-Black.ttf", 72)
-bold_font = pygame.font.Font("fonts/Roboto-Bold.ttf", 48)
-light_font = pygame.font.Font("fonts/Roboto-Light.ttf", 34)
-medium_font = pygame.font.Font("fonts/Roboto-Medium.ttf", 22)
-regular_font = pygame.font.Font("fonts/Roboto-Regular.ttf", 12)
-small_font = pygame.font.Font("fonts/Roboto-Black.ttf", 10)
-
-small_black_font = pygame.font.Font("fonts/Roboto-Black.ttf", 48)
+# Pause Screen
+title_pause_font = pygame.font.Font("fonts/BungeeShade-Regular.ttf", 32)
 
 # Scoreboard Initialization
 scoreboard = pygame.Surface([windowWidth, 50])
@@ -93,13 +83,14 @@ container = pygame.Surface([screenSize, screenSize])
 container.fill(black)
 
 # Global Variable Caller
-intro = True
-flag = None
-pause = False
-last_move = ["", int(0)]
-score = 0
+intro = True        # Intro While loop checker
+flag = None         # Main While loop checker
+pause = False       # Pause While loop checker
+last_move = ["", int(0)]        # User last move checker
+score = [0, 0]      # Score[0]: Lenght | Score[1]: score
 
 
+# Main snake head initializer and identifier
 class Cubes(object):
     rows = 20
     width = 500
@@ -133,6 +124,7 @@ class Cubes(object):
             pygame.draw.circle(surface, eyeC, centerMid, radius)
 
 
+# Body of the snake
 class Snake(object):
     body = []
     turns = {}
@@ -159,7 +151,7 @@ class Snake(object):
                     pause = True
                     if pause:
                         last_move = ["PAUSE", 0]
-                        Pause()
+                        Paused()
                     else:
                         pass
 
@@ -167,7 +159,7 @@ class Snake(object):
                     pause = True
                     if pause:
                         last_move = ["PAUSE", 0]
-                        Pause()
+                        Paused()
                     else:
                         pass
 
@@ -213,7 +205,7 @@ class Snake(object):
                     # Deleting the last turns to clear the path movers so that if we run into their
                     # again it will not automatically move to last turn in that area
                     self.turns.pop(p)
-            # Checking if the snake hit the border
+            # Checking collision if the snake hit the border
             else:
                 # logic: if X position is equal to -1(left) and position is less than 0(end border left)
                 if c.directX == -1 and c.pos[0] <= 0:
@@ -231,7 +223,7 @@ class Snake(object):
                     c.move(c.directX, c.directY)
 
     def reset(self, pos):
-        global last_move, start_time, elapse_time
+        global last_move, start_time
         self.head = Cubes(pos)
         self.body = []
         self.body.append(self.head)
@@ -269,21 +261,22 @@ class Snake(object):
                 c.draw(surface)
 
 
+# Button Section
 class Button(object):
-    global windowWidth, windowHeight
-
-    def __init__(self, posBox, text_input, color, identifier):
+    def __init__(self, posBox, text_input, color):
         # Passing variables
         self.posBox = posBox
         self.color = color
-        self.identify = identifier
         # Button rectangle
-        self.size = pygame.Rect(self.posBox, (150, 40))
+        self.size = pygame.Rect(self.posBox, (150, 45))
         # Button text
         self.text_input = text_input
+        # Rendering the font for that button
         self.text = btn_text_font.render(self.text_input, True, self.color)
+        # Taking the rectangle of the text and assigning it
         self.text_rect = self.text.get_rect(center=self.size.center)
 
+    # Hover function
     def hoverButton(self, position):
         if position[0] not in range(self.size.left, self.size.right) or position[1] not in range(
                 self.size.top, self.size.bottom):
@@ -291,24 +284,46 @@ class Button(object):
         else:
             self.text = btn_text_font.render(self.text_input, True, self.color)
 
+    # Checking click input
     def checkInput(self, position, typed):
-        global intro, flag
+        global intro, flag, pause, snake, food, score
         if position[0] in range(self.size.left, self.size.right) and position[1] in range(self.size.top,
                                                                                           self.size.bottom):
-            if not typed == 1:
-                pygame.quit()
-                sys.exit()
-            else:
+            # Type = 1 then Main loop will engage
+            if typed == 1:
                 intro = False
                 time.sleep(.25)
                 flag = True
                 pass
+            # Type = 2 then Pause loop will engage
+            elif typed == 2:
+                pause = False
+                time.sleep(0)
+                pass
+            # Type = 3 then Intro loop will engage (only be activated when ingame and pause is true
+            elif typed == 3 and pause:
+                snake.reset((10, 10))
+                food = Cubes(random_snack(rows, snake), color=foodC)
+                score = [0, 0]
+                pause = False
+                time.sleep(0)
+                flag = False
+                time.sleep(0)
+                intro = True
+                time.sleep(0)
+                main_intro()
+            # If not met anything the close the game
+            else:
+                pygame.quit()
+                sys.exit()
 
+    # Draw the rectangle in main surface as well the text
     def draw(self, btnColor):
         pygame.draw.rect(win, btnColor, self.size, border_radius=10)
         win.blit(self.text, self.text_rect)
 
 
+# Grid Section
 def draw_grid(current_width, row, surface):
     # Gap between rows and column box
     sizeBetween = current_width / row
@@ -332,6 +347,7 @@ def draw_grid(current_width, row, surface):
         pygame.draw.line(surface, gridC, (10, y), (current_width + 10, y), 1)
 
 
+# Main Surface updater
 def redraw_window(surface, new_time):
     global rows, screenSize, snake, food, score, last_move, highscore
 
@@ -347,7 +363,7 @@ def redraw_window(surface, new_time):
     timer_text2, timerLoc2 = text_object(str(new_time), counter_font, white)
     timerLoc2.midtop = (windowWidth / 2, 0)
 
-    # Player Moves
+    # Player Last Moves
     moves_text, moveLoc = text_object("Last move: " + str(last_move[0]) + " " + str(last_move[1]), highscore_lastM_font, white)
     moveLoc.topright = (windowWidth, 2)
 
@@ -361,8 +377,10 @@ def redraw_window(surface, new_time):
     # Casting the scoreboard and container into window
     win.blit(scoreboard, (0, 0))
     win.blit(container, (10, 60))
+    # Draw the snake and food to the main surface
     snake.draw(surface)
     food.draw(surface)
+    # Write the current datas or Score, Snake lenght, Timer text, Current time, highscore text, last move text
     win.blit(score_text, scoreLoc1)
     win.blit(snake_lenght, scoreLoc2)
     win.blit(timer_text1, timerLoc1)
@@ -377,7 +395,9 @@ def redraw_window(surface, new_time):
     pygame.display.update()
 
 
+# Snake Food randomizer and casting
 def random_snack(row, item):
+    # Detecting the current position of head as well the body
     position = item.body
 
     while True:
@@ -407,9 +427,9 @@ def main_text(text, font, color):
     win.blit(text_surf, text_rect)
 
     pygame.display.update()
-    main()
 
 
+# Score output
 def message_box(subject, content):
     root = tk.Tk()
     root.attributes("-topmost", True)
@@ -421,21 +441,38 @@ def message_box(subject, content):
         pass
 
 
-def Pause():
+# Pause Section
+def Paused():
     global pause, flag, start_time, elapse_time
 
-    win.fill(pause_backgrourd)
-    print("Game is paused")
-    unpause_game = Button((windowWidth / 2 - 170, 400), "PLAY", snakeColor, "Play button clicked")
-    exit_game = Button((windowWidth / 2 + 21, 400), "QUIT", snakeColor, "Quit button clicked")
+    # Pause text and buttons
+    unpause_game = Button((windowWidth / 2 - 170, 300), "PAUSE", snakeColor)
+    exit_game = Button((windowWidth / 2 + 21, 300), "MENU", snakeColor)
+    pause_container1 = pygame.Rect((windowWidth / 2, windowHeight / 2), (windowWidth - 100, 150))
+    pause_container1.center = (windowWidth / 2, windowHeight / 2)
+    pause_container2 = pygame.Rect((windowWidth / 2, windowHeight / 2), (windowWidth - 110, 140))
+    pause_container2.center = (windowWidth / 2, windowHeight / 2)
+    message1, messageLoc1 = text_object("GAME IS PAUSED", title_pause_font, pause_background)
+    messageLoc1.midbottom = (windowWidth / 2, windowHeight / 2 - 20)
+
+    # Displaying the pause content
+    pygame.draw.rect(win, pause_background, pause_container1, border_radius=6)
+    pygame.draw.rect(win, black, pause_container2, border_radius=6)
+    win.blit(message1, messageLoc1)
+
 
     while pause:
+        # Casting new time to for timer
         start_time = time.time() - elapse_time
-
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            # Mouse click detector
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                unpause_game.checkInput(pygame.mouse.get_pos(), 2)
+                exit_game.checkInput(pygame.mouse.get_pos(), 3)
+            # Keypress detector
             if event.type == pygame.KEYDOWN:
                 keys = pygame.key.get_pressed()
                 if keys[pygame.K_p] or keys[pygame.K_ESCAPE]:
@@ -445,31 +482,40 @@ def Pause():
                     pass
                 else:
                     print("Invalid Input")
-        clock.tick(30)
+        # function updater
+        unpause_game.draw(unpause_color)
+        unpause_game.hoverButton(pygame.mouse.get_pos())
+        exit_game.draw(exit_color)
+        exit_game.hoverButton(pygame.mouse.get_pos())
         pygame.display.update()
+        clock.tick(30)
 
 
+# Main Intro Section
 def main_intro():
-    global black_font, bold_font, medium_font, regular_font, light_font, windowWidth, windowHeight, intro
-    play_game = Button((windowWidth / 2 - 170, 450), "PLAY", hover_color, "Play button clicked")
-    exit_game = Button((windowWidth / 2 + 21, 450), "QUIT", hover_color, "Quit button clicked")
+    global  windowWidth, windowHeight, intro
 
+    # Defining buttons and text
+    play_game = Button((windowWidth / 2 - 170, 450), "PLAY", hover_color)
+    exit_game = Button((windowWidth / 2 + 21, 450), "QUIT", hover_color)
+    # Title
     message1, messageLoc1 = text_object("POPPING", title_font, popping)
     messageLoc1.midtop = ((windowWidth / 2 - 40), 80)
     message2, messageLoc2 = text_object("SNAKE", title_font, snakeT)
     messageLoc2.topleft = ((windowWidth / 2 - 40), 120)
-
+    # Details
     detail1, detailLoc1 = text_object("This is a enhance version of snake game", detail_font, black)
     detail2, detailLoc2 = text_object(" that has beenalready enhance by us", detail_font, black)
     detailLoc1.midtop = ((windowWidth / 2), 250)
     detailLoc2.midtop = ((windowWidth / 2), 260)
-
+    # Instruction
     instruct1, intructLoc1 = text_object("To control the snake use the \"WASD\" or \"ARROW KEYS\" to move",
                                          instruct_font, black)
     instruct2, intructLoc2 = text_object("and \"ESP\" to pause the game.", instruct_font, black)
     intructLoc1.midtop = ((windowWidth / 2), 310)
     intructLoc2.midtop = ((windowWidth / 2), 320)
 
+    # Main Intro loop
     while intro:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -495,13 +541,18 @@ def main_intro():
         clock.tick(30)
 
 
+# Main Game Section
 def main():
     global rows, snake, food, win, flag, intro, score, time_limit, elapse_time, start_time, highscore
 
+    # Variable declaration section
     time_limit = 8
+    # Current timer start time
     start_time = time.time()
     score = [0, 0]
+    # for timer deductor comparing variable
     comparing = float(0.0)
+    # Temporary score holder
     add = 0
     # Passing the Snake(object) to snake variable
     snake = Snake(snakeColor, (10, 10))
@@ -510,6 +561,7 @@ def main():
 
     # Main loop to load the animations and logic
     while flag and not intro:
+        # Default timer time (starting timer)
         updated_timer = 8
         elapse_time = time.time() - start_time
         for event in pygame.event.get():
@@ -517,8 +569,9 @@ def main():
                 pygame.quit()
                 sys.exit()
 
-        # pygame.time.delay is a limiter to maintain the performance of computer
+        # Game Speed initializer
         clock.tick(FPS)
+        # Move function updater
         snake.move()
 
         # Starting the actual time counting upon user first move
@@ -531,9 +584,10 @@ def main():
             snake.addCube()
             # Spawn another food
             food = Cubes(random_snack(rows, snake), color=foodC)
-            add = 0
+            # Casting/Reseter for start timer
             start_time = time.time()
 
+            # Score logic
             if len(snake.body) % 2 == 0:
                 add += int(len(snake.body) + 2 + score[1])
                 score = [len(snake.body), add]
@@ -543,24 +597,33 @@ def main():
                 score = [len(snake.body), add]
                 add = 0
 
+            # Timer logic deductor
             if len(snake.body) % 15 == comparing:
+
+                # Variable for next logic
                 comparing = float(0.1)
+
+                # Ensuring to deduct only 1s
                 if comparing == float(0.1):
                     time_limit = time_limit - 1
-                    print("yes")
+                    print("Timer: -1")
             comparing = float(0.0)
 
         # Check the current length of the snake for score counting
         for x in range(len(snake.body)):
             # Collision checker if the head hit itself
             if snake.body[x].pos in list(map(lambda z: z.pos, snake.body[x + 1:])):
+
                 # Call message box function
                 message_box("You lose!", "Score: " + str(score[1]) + " Lenght: " + str(score[0]))
+
                 # Call reset function
                 score = [0, 0]
                 snake.reset((10, 10))
+                # Break the for loop to restart the game
                 break
 
+        # Timer checker for moves as well if player timer reach zero
         for x in range(len(snake.body)):
             if last_move[1] == 1 and len(snake.body) >= 1 and not updated_timer == 0:
                 updated_timer = time_limit - int(elapse_time)
@@ -568,6 +631,7 @@ def main():
                     snake.body.pop()
                     score[0] = len(snake.body)
                     start_time = time.time()
+                    time.sleep(.01)
 
                 # print(len(snake.body))
                 if elapse_time > time_limit and len(snake.body) == 0:
