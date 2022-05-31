@@ -2,7 +2,6 @@
 # Group Project Snake Rebuild
 
 # Libraries
-# import os
 import random
 import time
 import tkinter as tk
@@ -24,10 +23,6 @@ icon = pygame.image.load("imgs/bgpic1.png")
 clock = pygame.time.Clock()
 FPS = 10
 
-# Snake Move
-smove = pygame.mixer.Sound('sounds/snakemove.wav')
-seat = pygame.mixer.Sound('sounds/snakeat.wav')
-
 # Color Section
 black = (0, 0, 0)
 white = (255, 255, 255)
@@ -44,9 +39,9 @@ green = (0, 255, 0)
 clickedGreen = (0, 127, 0)
 
 # Game Fonts
-largeFont = pygame.font.Font('fonts/Courier Prime Bold.ttf', 52)
-mediumFont = pygame.font.Font('fonts/Courier Prime.ttf', 15)
-smallFont = pygame.font.Font('fonts/Courier Prime.ttf', 11)
+largeFont = pygame.font.SysFont('Courier New', 52)
+mediumFont = pygame.font.SysFont('Courier New', 15)
+smallFont = pygame.font.SysFont('Courier New', 11)
 
 # Pause variable
 pause = False
@@ -201,8 +196,8 @@ def DrawGrid(current_width, row, surface):
         x = x + sizeBetween
         y = y + sizeBetween
 
-        pygame.draw.line(surface, grid, (x, 0), (x, current_width))
-        pygame.draw.line(surface, grid, (0, y), (current_width, y))
+        pygame.draw.line(surface, bgColor, (x, 0), (x, current_width))
+        pygame.draw.line(surface, bgColor, (0, y), (current_width, y))
 
 
 def redraw_window(surface):
