@@ -1,14 +1,14 @@
 # Not mine, Edited and modified for study purposes
 # Rapid Snake
 
+# Libraries
 import random
 import sys
 import time
 import tkinter as tk
 from tkinter import messagebox
-
-# Libraries
 import pygame
+
 
 # Game Initializing
 pygame.init()
